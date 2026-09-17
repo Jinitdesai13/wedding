@@ -46,6 +46,7 @@ function showPage(index) {
   prev.disabled = current <= 1;
   next.disabled = current === pages.length - 1;
   document.title = `${current === 0 ? 'Open your invitation' : pages[current].getAttribute('aria-label')} | Kanishka & Jinit`;
+  if (current === pages.length - 1 && window.location.hash !== '#rsvp') history.replaceState(null, '', '#rsvp');
 }
 
 const envelope = document.getElementById('envelope-page');
@@ -56,6 +57,7 @@ document.getElementById('openInvitation').addEventListener('click', () => {
 });
 document.getElementById('openInvitation').addEventListener('pointerdown', playMusic);
 document.getElementById('openInvitation').addEventListener('touchstart', playMusic, { passive: true });
+document.getElementById('rsvpLink').addEventListener('click', () => showPage(pages.length - 1));
 prev.addEventListener('click', () => showPage(current - 1));
 next.addEventListener('click', () => showPage(current + 1));
 musicButton.addEventListener('click', () => {
@@ -122,6 +124,8 @@ function updateCountdown() {
 }
 updateCountdown();
 setInterval(updateCountdown, 1000);
+
+if (window.location.hash.toLowerCase() === '#rsvp') showPage(pages.length - 1);
 
 function announce(message) {
   toast.textContent = message;
