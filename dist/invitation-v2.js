@@ -130,7 +130,47 @@ function announce(message) {
   toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
 }
 
-document.getElementById('rsvpButton').addEventListener('click', () => announce('RSVP form link will be added soon. Please contact Kanishka or Jinit.'));
+const rsvpForm = document.getElementById('rsvpForm');
+const rsvpThanks = document.getElementById('rsvpThanks');
+rsvpForm.addEventListener('submit', event => {
+  event.preventDefault();
+  const data = new FormData(rsvpForm);
+  const fullName = data.get('fullName').trim();
+  const attendance = data.get('attendance');
+  const adults = data.get('adults') || '0';
+  const children = data.get('children') || '0';
+  const body = [
+    'RSVP RECEIVED',
+    '',
+    `Full Name: ${fullName}`,
+    `Attendance: ${attendance}`,
+    `Guests attending: ${adults} adult(s), ${children} child/children`,
+    '',
+    `Names of everyone attending:`,
+    data.get('guestNames').trim(),
+    '',
+    `Children's ages:`,
+    data.get('childrenAges').trim() || 'None',
+    '',
+    `Dietary requirements or allergies:`,
+    data.get('dietary').trim(),
+    '',
+    `Anything else we should know:`,
+    data.get('extraInfo').trim() || 'None',
+    '',
+    `Note for the bride & groom:`,
+    data.get('note').trim() || 'None',
+    '',
+    'With love,',
+    'Kanishka & Jinit 06.12.2026'
+  ].join('\n');
+  const subject = `Wedding RSVP - ${fullName}`;
+  const mailto = `mailto:jinitrabari@gmail.com,kanishka.desai4@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  rsvpThanks.hidden = false;
+  rsvpForm.hidden = true;
+  announce('Your email app is opening with the RSVP');
+  window.location.href = mailto;
+});
 document.getElementById('shareButton').addEventListener('click', async () => {
   const data = { title: 'Kanishka & Jinit Wedding Invitation', text: 'Join us on 6 December 2026.', url: location.href.split('#')[0] };
   try {
