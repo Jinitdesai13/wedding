@@ -1,0 +1,113 @@
+const pages = [...document.querySelectorAll('.page')];
+const controls = document.getElementById('pageControls');
+const status = document.getElementById('pageStatus');
+const prev = document.getElementById('prevPage');
+const next = document.getElementById('nextPage');
+const toast = document.getElementById('toast');
+let current = 0;
+let toastTimer;
+let lastPageChange = 0;
+
+function showPage(index) {
+  const target = Math.max(0, Math.min(pages.length - 1, index));
+  pages.forEach((page, i) => {
+    page.classList.toggle('active', i === target);
+    page.inert = i !== target;
+    if (i === target) page.scrollTop = 0;
+  });
+  current = target;
+  lastPageChange = Date.now();
+  controls.hidden = current === 0;
+  status.textContent = `${current + 1} / ${pages.length}`;
+  prev.disabled = current <= 1;
+  next.disabled = current === pages.length - 1;
+  document.title = `${current === 0 ? 'Open your invitation' : pages[current].getAttribute('aria-label')} | Kanishka & Jinit`;
+}
+
+const envelope = document.getElementById('envelope-page');
+document.getElementById('openInvitation').addEventListener('click', () => {
+  if (envelope.classList.contains('unsealing')) return;
+  envelope.classList.add('unsealing');
+  window.setTimeout(() => showPage(1), matchMedia('(prefers-reduced-motion: reduce)').matches ? 100 : 1450);
+});
+prev.addEventListener('click', () => showPage(current - 1));
+next.addEventListener('click', () => showPage(current + 1));
+document.addEventListener('keydown', event => {
+  if (event.key === 'ArrowRight' && current > 0) showPage(current + 1);
+  if (event.key === 'ArrowLeft' && current > 1) showPage(current - 1);
+});
+
+let touchStartX = 0;
+let touchStartY = 0;
+let touchStartedAtTop = false;
+let touchStartedAtBottom = false;
+const phone = document.getElementById('phone');
+phone.addEventListener('touchstart', event => {
+  touchStartX = event.changedTouches[0].screenX;
+  touchStartY = event.changedTouches[0].screenY;
+  const page = pages[current];
+  touchStartedAtTop = page.scrollTop <= 2;
+  touchStartedAtBottom = page.scrollTop + page.clientHeight >= page.scrollHeight - 2;
+}, { passive: true });
+phone.addEventListener('touchend', event => {
+  if (current === 0) return;
+  const dx = event.changedTouches[0].screenX - touchStartX;
+  const dy = event.changedTouches[0].screenY - touchStartY;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+    showPage(current + (dx < 0 ? 1 : -1));
+  } else if (Math.abs(dy) > 70 && Math.abs(dy) > Math.abs(dx) * 1.3) {
+    if (dy < 0 && touchStartedAtBottom) showPage(current + 1);
+    if (dy > 0 && touchStartedAtTop && current > 1) showPage(current - 1);
+  }
+}, { passive: true });
+
+let boundaryWheel = 0;
+document.addEventListener('wheel', event => {
+  if (current === 0 || Math.abs(event.deltaY) < Math.abs(event.deltaX)) return;
+  const page = pages[current];
+  const goingForward = event.deltaY > 0;
+  const atBoundary = goingForward
+    ? page.scrollTop + page.clientHeight >= page.scrollHeight - 3
+    : page.scrollTop <= 3;
+  if (!atBoundary) { boundaryWheel = 0; return; }
+  if ((!goingForward && current <= 1) || (goingForward && current >= pages.length - 1)) return;
+  event.preventDefault();
+  if (Date.now() - lastPageChange < 650) return;
+  boundaryWheel += event.deltaY;
+  if (Math.abs(boundaryWheel) >= 35) {
+    showPage(current + (goingForward ? 1 : -1));
+    boundaryWheel = 0;
+  }
+}, { passive: false });
+
+function updateCountdown() {
+  const difference = Math.max(0, new Date('2026-12-06T16:00:00+11:00').getTime() - Date.now());
+  const values = {
+    days: Math.floor(difference / 86400000),
+    hours: Math.floor(difference / 3600000) % 24,
+    minutes: Math.floor(difference / 60000) % 60,
+    seconds: Math.floor(difference / 1000) % 60
+  };
+  for (const [id, value] of Object.entries(values)) document.getElementById(id).textContent = String(value).padStart(2, '0');
+}
+updateCountdown();
+setInterval(updateCountdown, 1000);
+
+function announce(message) {
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+document.getElementById('rsvpButton').addEventListener('click', () => announce('RSVP form link will be added soon. Please contact Kanishka or Jinit.'));
+document.getElementById('shareButton').addEventListener('click', async () => {
+  const data = { title: 'Kanishka & Jinit Wedding Invitation', text: 'Join us on 6 December 2026.', url: location.href.split('#')[0] };
+  try {
+    if (navigator.share) await navigator.share(data);
+    else if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(data.url); announce('Invitation link copied'); }
+    else announce('Copy the page address to share this invitation');
+  } catch (error) { if (error.name !== 'AbortError') announce('Copy the page address to share this invitation'); }
+});
+
+showPage(0);
