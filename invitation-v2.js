@@ -9,12 +9,11 @@ const musicButton = document.getElementById('musicButton');
 let current = 0;
 let toastTimer;
 let lastPageChange = 0;
-let musicStarted = false;
 
 async function playMusic() {
   try {
+    weddingAudio.volume = 0.82;
     await weddingAudio.play();
-    musicStarted = true;
     musicButton.classList.add('is-playing');
     musicButton.setAttribute('aria-label', 'Pause wedding music');
     musicButton.setAttribute('aria-pressed', 'true');
@@ -22,6 +21,7 @@ async function playMusic() {
     musicButton.classList.remove('is-playing');
     musicButton.setAttribute('aria-label', 'Play wedding music');
     musicButton.setAttribute('aria-pressed', 'false');
+    announce('Tap the music button to play the song');
   }
 }
 
@@ -52,9 +52,10 @@ const envelope = document.getElementById('envelope-page');
 document.getElementById('openInvitation').addEventListener('click', () => {
   if (envelope.classList.contains('unsealing')) return;
   envelope.classList.add('unsealing');
-  playMusic();
   window.setTimeout(() => showPage(1), matchMedia('(prefers-reduced-motion: reduce)').matches ? 100 : 1450);
 });
+document.getElementById('openInvitation').addEventListener('pointerdown', playMusic);
+document.getElementById('openInvitation').addEventListener('touchstart', playMusic, { passive: true });
 prev.addEventListener('click', () => showPage(current - 1));
 next.addEventListener('click', () => showPage(current + 1));
 musicButton.addEventListener('click', () => {
